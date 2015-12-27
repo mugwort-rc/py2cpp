@@ -85,6 +85,12 @@ class Converter(ast.NodeVisitor):
         operand = self.visit(node.operand)
         return cpp.UnaryOp(op=op, operand=operand)
 
+    def visit_IfExp(self, node):
+        test = self.visit(node.test)
+        body = self.visit(node.body)
+        orelse = self.visit(node.orelse)
+        return cpp.IfExp(test=test, body=body, orelse=orelse)
+
     def visit_Call(self, node):
         func = self.visit(node.func)
         args = [self.visit(x) for x in node.args]

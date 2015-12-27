@@ -102,3 +102,9 @@ class TestUnaryOp:
     def test_USub(self):
         conv = convert("-a")
         assert [x.build() for x in conv] == ["-a;"]
+
+
+class TestIfExp:
+    def test_IfExp(self):
+        conv = convert("a if True else b")
+        assert [x.build() for x in conv] == ["((True) ? (a) : (b));"]

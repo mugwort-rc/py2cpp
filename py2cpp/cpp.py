@@ -77,6 +77,19 @@ class UnaryOp(CodeExpression):
         return "{}{}".format(self.op, operand)
 
 
+class IfExp(CodeExpression):
+    def __init__(self, test, body, orelse):
+        self.test = test
+        self.body = body
+        self.orelse = orelse
+
+    def build(self):
+        test = self.test.build()
+        body = self.body.build()
+        orelse = self.orelse.build()
+        return "(({}) ? ({}) : ({}))".format(test, body, orelse)
+
+
 class Call(CodeExpression):
     def __init__(self, func, args=[], keywords=[], starargs=None, kwargs=None):
         self.func = func

@@ -104,6 +104,19 @@ class TestUnaryOp:
         assert [x.build() for x in conv] == ["-a;"]
 
 
+class TestLambda:
+    def test_Lambda(self):
+        conv = convert("lambda x: x + 1")
+        assert [x.build() for x in conv] == ["[&](int x) -> auto { return x + 1; };"]
+
+    def test_Lambda_set_arg_type(self):
+        node = ast.parse("lambda x: x + 1")
+        conv = Converter()
+        ret = conv.visit(node)
+        conv.arguments[0].set_arg_type("x", "double")
+        assert [x.build() for x in ret] == ["[&](double x) -> auto { return x + 1; };"]
+
+
 class TestIfExp:
     def test_IfExp(self):
         conv = convert("a if True else b")

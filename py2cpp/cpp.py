@@ -7,6 +7,7 @@ class Type(enum.Enum):
     Block = 1
     Expr = 2
     Stmt = 4
+    arguments = 2048
 
 
 INDENT = " " * 4
@@ -77,6 +78,17 @@ class UnaryOp(CodeExpression):
         return "{}{}".format(self.op, operand)
 
 
+class Lambda(CodeExpression):
+    def __init__(self, args, body):
+        self.args = args
+        self.body = body
+
+    def build(self):
+        args = self.args.build()
+        body = self.body.build()
+        return "[&]({}) -> auto {{ return {}; }}".format(args, body)
+
+
 class IfExp(CodeExpression):
     def __init__(self, test, body, orelse):
         self.test = test
@@ -129,6 +141,42 @@ class Name(CodeExpression):
 
     def build(self):
         return self.id
+
+
+class arguments(Base):
+    def __init__(self, args, vararg, kwarg, defaults):
+        self.args = args
+        self.vararg = vararg
+        self.kwarg = kwarg
+        self.defaults = defaults
+        self.types = {}
+
+    def get_arg_names(self):
+        return [x.build() for x in self.args]
+
+    def get_arg_values(self):
+        return [x.build() for x in self.defaults]
+
+    def set_arg_type(self, name, type):
+        assert name in self.get_arg_names()
+        self.types[name] = type
+
+    def build(self):
+        types = dict(self.types)
+        names = self.get_arg_names()
+        values = self.get_arg_values()
+        for name in names:
+            if name not in types:
+                types[name] = "int"
+        start = len(names) - len(values)
+        args = []
+        for i, name in enumerate(names):
+            if i < start:
+                args.append("{} {}".format(types[name], name))
+            else:
+                value = values[i - start]
+                args.append("{} {}={}".format(types[name], name, value))
+        return ", ".join(args)
 
 
 #

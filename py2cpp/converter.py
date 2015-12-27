@@ -40,6 +40,7 @@ class Converter(ast.NodeVisitor):
         """
         self.transformers = [x() for x in transformers]
         self.hooks = [x(self) for x in hooks]
+        self.arguments = []
 
     def visit(self, node):
         ret = super(Converter, self).visit(node)
@@ -85,6 +86,11 @@ class Converter(ast.NodeVisitor):
         operand = self.visit(node.operand)
         return cpp.UnaryOp(op=op, operand=operand)
 
+    def visit_Lambda(self, node):
+        args = self.visit(node.args)
+        body = self.visit(node.body)
+        return cpp.Lambda(args=args, body=body)
+
     def visit_IfExp(self, node):
         test = self.visit(node.test)
         body = self.visit(node.body)
@@ -109,3 +115,12 @@ class Converter(ast.NodeVisitor):
     def visit_Name(self, node):
         return cpp.Name(node.id)
         # TODO: node.ctx
+
+    def visit_arguments(self, node):
+        args = [self.visit(x) for x in node.args]
+        vararg = node.vararg
+        kwarg = node.kwarg
+        defaults = [self.visit(x) for x in node.defaults]
+        ret = cpp.arguments(args=args, vararg=vararg, kwarg=kwarg, defaults=defaults)
+        self.arguments.append(ret)
+        return ret

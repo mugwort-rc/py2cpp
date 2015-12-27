@@ -6,6 +6,11 @@ import cpp
 import hook
 import transformer
 
+BOOLOP_MAP = {
+    ast.And: "&&",
+    ast.Or: "||",
+}
+
 OPERATOR_MAP = {
     ast.Add: "+",
     ast.Sub: "-",
@@ -56,6 +61,10 @@ class Converter(ast.NodeVisitor):
     #
     # Expressions
     #
+
+    def visit_BoolOp(self, node):
+        op = BOOLOP_MAP[node.op.__class__]
+        return cpp.BoolOp(op=op, values=[self.visit(x) for x in node.values])
 
     def visit_BinOp(self, node):
         assert node.op.__class__ not in [ast.Pow, ast.FloorDiv]

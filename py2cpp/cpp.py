@@ -39,6 +39,21 @@ class CodeExpression(Base):
         super(CodeExpression, self).__init__(Type.Expr)
 
 
+class BoolOp(CodeExpression):
+    def __init__(self, op, values):
+        self.op = op
+        self.values = values
+
+    def build(self):
+        values = []
+        for value in self.values:
+            if isinstance(value, BoolOp):
+                values.append("({})".format(value.build()))
+            else:
+                values.append(value.build())
+        return " {} ".format(self.op).join(values)
+
+
 class BinOp(CodeExpression):
     def __init__(self, left, op, right):
         super(BinOp, self).__init__()

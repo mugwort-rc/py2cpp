@@ -10,6 +10,24 @@ def convert(src):
     return conv.visit(node)
 
 
+class TestBoolOp:
+    def test_And(self):
+        conv = convert("a and b")
+        assert [x.build() for x in conv] == ["a && b;"]
+
+    def test_Or(self):
+        conv = convert("a or b")
+        assert [x.build() for x in conv] == ["a || b;"]
+
+    def test_AndOr(self):
+        conv = convert("a and b or c and d")
+        assert [x.build() for x in conv] == ["(a && b) || (c && d);"]
+
+    def test_AndOr2(self):
+        conv = convert("a and (b or c) and d")
+        assert [x.build() for x in conv] == ["a && (b || c) && d;"]
+
+
 class TestBinOp:
     def test_Add(self):
         conv = convert("x + 1")

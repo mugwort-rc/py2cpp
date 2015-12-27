@@ -26,6 +26,13 @@ OPERATOR_MAP = {
     #ast.FloorDiv: "//",  # special case
 }
 
+UNARYOP_MAP = {
+    ast.Invert: "~",
+    ast.Not: "!",
+    ast.UAdd: "+",
+    ast.USub: "-",
+}
+
 class Converter(ast.NodeVisitor):
     def __init__(self, transformers=transformer.Transformers, hooks=hook.Hooks):
         """
@@ -72,6 +79,11 @@ class Converter(ast.NodeVisitor):
         op = OPERATOR_MAP[node.op.__class__]
         right = self.visit(node.right)
         return cpp.BinOp(left=left, op=op, right=right)
+
+    def visit_UnaryOp(self, node):
+        op = UNARYOP_MAP[node.op.__class__]
+        operand = self.visit(node.operand)
+        return cpp.UnaryOp(op=op, operand=operand)
 
     def visit_Call(self, node):
         func = self.visit(node.func)

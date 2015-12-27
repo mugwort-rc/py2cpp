@@ -65,6 +65,18 @@ class BinOp(CodeExpression):
         return " ".join([self.left.build(), self.op, self.right.build()])
 
 
+class UnaryOp(CodeExpression):
+    def __init__(self, op, operand):
+        self.op = op
+        self.operand = operand
+
+    def build(self):
+        operand = self.operand.build()
+        if isinstance(self.operand, BoolOp):
+            operand = "({})".format(operand)
+        return "{}{}".format(self.op, operand)
+
+
 class Call(CodeExpression):
     def __init__(self, func, args=[], keywords=[], starargs=None, kwargs=None):
         self.func = func

@@ -76,3 +76,29 @@ class TestBinOp:
     def test_FloorDiv(self):
         conv = convert("x // 1")
         assert [x.build() for x in conv] == ["int(x / 1);"]
+
+
+class TestUnaryOp:
+    def test_Invert(self):
+        conv = convert("~a")
+        assert [x.build() for x in conv] == ["~a;"]
+
+    def test_Not(self):
+        conv = convert("not a")
+        assert [x.build() for x in conv] == ["!a;"]
+
+    def test_Not_with_BoolOp(self):
+        conv = convert("not a and b")
+        assert [x.build() for x in conv] == ["!a && b;"]
+
+    def test_Not_with_BoolOp2(self):
+        conv = convert("not (a and b)")
+        assert [x.build() for x in conv] == ["!(a && b);"]
+
+    def test_UAdd(self):
+        conv = convert("+a")
+        assert [x.build() for x in conv] == ["+a;"]
+
+    def test_USub(self):
+        conv = convert("-a")
+        assert [x.build() for x in conv] == ["-a;"]

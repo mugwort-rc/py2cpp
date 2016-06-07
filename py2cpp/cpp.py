@@ -30,9 +30,31 @@ class CodeStatement(Base):
         self.stmt = stmt
 
 
+class FunctionDef(CodeStatement):
+    def __init__(self, name, args, body):
+        super(FunctionDef, self).__init__(body)
+        self.name = name
+        self.args = args
+
+    def build(self):
+        return "void {}({}) {{{}}}".format(
+            self.name,
+            self.args.build(),
+            "".join([x.build() for x in self.stmt])
+        )
+
+
 class Expr(CodeStatement):
     def build(self):
         return "{};".format(self.stmt.build())
+
+
+class Pass(CodeStatement):
+    def __init__(self):
+        pass
+
+    def build(self):
+        return ""
 
 
 class CodeExpression(Base):

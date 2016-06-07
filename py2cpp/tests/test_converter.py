@@ -10,6 +10,50 @@ def convert(src):
     return conv.visit(node)
 
 
+class TestFunctionDef:
+    def test_pass(self):
+        conv = convert("""
+def test():
+    pass
+""".strip())
+        assert [x.build() for x in conv] == ["void test() {}"]
+
+    def test_BoolOp(self):
+        conv = convert("""
+def test():
+    a and b
+""".strip())
+        assert [x.build() for x in conv] == ["void test() {a && b;}"]
+
+    def test_BinOp(self):
+        conv = convert("""
+def test():
+    a + b
+""".strip())
+        assert [x.build() for x in conv] == ["void test() {a + b;}"]
+
+    def test_UnaryOp(self):
+        conv = convert("""
+def test():
+    ~a
+""".strip())
+        assert [x.build() for x in conv] == ["void test() {~a;}"]
+
+    def test_Lambda(self):
+        conv = convert("""
+def test():
+    lambda x: x + 1
+""".strip())
+        assert [x.build() for x in conv] == ["void test() {[&](int x) -> auto { return x + 1; };}"]
+
+    def test_IfExp(self):
+        conv = convert("""
+def test():
+    a if x else b
+""".strip())
+        assert [x.build() for x in conv] == ["void test() {((x) ? (a) : (b));}"]
+
+
 class TestBoolOp:
     def test_And(self):
         conv = convert("a and b")

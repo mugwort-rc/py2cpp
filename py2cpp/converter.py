@@ -63,8 +63,19 @@ class Converter(ast.NodeVisitor):
     # Statements
     #
 
+    def visit_FunctionDef(self, node):
+        name = node.name
+        args = self.visit(node.args)
+        body = [self.visit(x) for x in node.body]
+        # TODO: decorator_list
+        # TODO: returns (python3)
+        return cpp.FunctionDef(name=name, args=args, body=body)
+
     def visit_Expr(self, node):
         return cpp.Expr(self.visit(node.value))
+
+    def visit_Pass(self, node):
+        return cpp.Pass()
 
     #
     # Expressions

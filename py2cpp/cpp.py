@@ -57,11 +57,36 @@ class FunctionDef(CodeStatement):
     def build(self, ctx):
         with ctx:
             body = [x.build(ctx) for x in self.stmt]
-        return "void {}({}) {{\n{}\n}}".format(
-            self.name,
-            self.args.build(ctx),
-            "\n".join(body)
-        )
+        return "\n".join([
+            "{}void {}({}) {{".format(
+                ctx.indent(),
+                self.name,
+                self.args.build(ctx),
+            ),
+            "\n".join(body),
+            ctx.indent() + "}",
+        ])
+
+
+class ClassDef(CodeStatement):
+    def __init__(self, name, bases, body, **kwargs):
+        super(ClassDef, self).__init__(body)
+        self.name = name
+        self.bases = bases
+        self.keywords = kwargs.get("keywords", [])
+
+    def build(self, ctx):
+        with ctx:
+            body = [x.build(ctx) for x in self.stmt]
+        return "\n".join([
+            "{}class {}{} {{".format(
+                ctx.indent(),
+                self.name,
+                " : {}".format(", ".join(["public " + x.build(ctx) for x in self.bases])) if self.bases else "",
+            ),
+            "\n".join(body),
+            ctx.indent() + "};",
+        ])
 
 
 class While(CodeStatement):
@@ -74,10 +99,13 @@ class While(CodeStatement):
         with ctx:
             body = [x.build(ctx) for x in self.stmt]
         # TODO: orelse
-        return "while ({}) {{\n{}\n}}".format(
-            self.test.build(ctx),
-            "\n".join(body)
-        )
+        return "\n".join(["{}while ({}) {{".format(
+                ctx.indent(),
+                self.test.build(ctx)
+            ),
+            "\n".join(body),
+            ctx.indent() + "}",
+        ])
 
 
 class Expr(CodeStatement):
@@ -256,6 +284,18 @@ class arguments(Base):
                 value = values[i - start]
                 args.append("{} {}={}".format(types[name], name, value))
         return ", ".join(args)
+
+
+class keyword(Base):
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def build(self, ctx):
+        return "static const auto {} = {}".format(
+            self.name,
+            self.value.build(ctx)
+        )
 
 
 #

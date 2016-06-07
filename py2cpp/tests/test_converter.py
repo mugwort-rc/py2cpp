@@ -60,6 +60,23 @@ def test():
         assert build(conv) == ["void test() {\n    ((x) ? (a) : (b));\n}"]
 
 
+class TestClassDef:
+    def test_pass(self):
+        conv = convert("""
+class test:
+    pass
+""".strip())
+        assert build(conv) == ["class test {\n\n};"]
+
+    def test_self(self):
+        conv = convert("""
+class test(a, b):
+    def test(self):
+        pass
+""".strip())
+        assert build(conv) == ["class test : public a, public b {\n    void test(int self) {\n\n    }\n};"]
+
+
 class TestWhile:
     def test_while1(self):
         conv = convert("""

@@ -2,6 +2,8 @@
 
 import ast
 
+import six
+
 import cpp
 import hook
 import transformer
@@ -70,6 +72,18 @@ class Converter(ast.NodeVisitor):
         # TODO: decorator_list
         # TODO: returns (python3)
         return cpp.FunctionDef(name=name, args=args, body=body)
+
+    def visit_ClassDef(self, node):
+        name = node.name
+        bases = [self.visit(x) for x in node.bases]
+        if six.PY3:
+            keywords = [self.visit(x) for x in node.keywords]
+        body = [self.visit(x) for x in node.body]
+        # TODO: decorator_list
+        if six.PY3:
+            return cpp.ClassDef(name=name, bases=bases, keywords=keywords, body=body)
+        else:
+            return cpp.ClassDef(name=name, bases=bases, body=body)
 
     def visit_While(self, node):
         test = self.visit(node.test)
@@ -147,3 +161,8 @@ class Converter(ast.NodeVisitor):
         ret = cpp.arguments(args=args, vararg=vararg, kwarg=kwarg, defaults=defaults)
         self.arguments.append(ret)
         return ret
+
+    def visit_keyword(self, node):
+        name = node.name
+        value = self.visit(node.value)
+        return cpp.keyword(name=name, value=value)

@@ -100,6 +100,18 @@ class Return(CodeStatement):
             return ctx.indent() + "return;"
 
 
+class Assign(CodeStatement):
+    def __init__(self, targets, value):
+        self.targets = targets
+        self.value = value
+
+    def build(self, ctx):
+        return ctx.indent() + "{} = {};".format(
+            " = ".join([x.build(ctx) for x in self.targets]),
+            self.value.build(ctx)
+        )
+
+
 class While(CodeStatement):
     def __init__(self, test, body, orelse):
         super(While, self).__init__(body)

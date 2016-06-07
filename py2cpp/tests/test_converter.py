@@ -87,6 +87,16 @@ class TestReturn:
         assert build(conv) == ["return 1;"]
 
 
+class TestAssign:
+    def test_assign(self):
+        conv = convert("a = 1")
+        assert build(conv) == ["a = 1;"]
+
+    def test_assigns(self):
+        conv = convert("a = b = c")
+        assert build(conv) == ["a = b = c;"]
+
+
 class TestWhile:
     def test_while1(self):
         conv = convert("""

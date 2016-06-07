@@ -92,6 +92,11 @@ class Converter(ast.NodeVisitor):
             value = None
         return cpp.Return(value=value)
 
+    def visit_Assign(self, node):
+        targets = [self.visit(x) for x in node.targets]
+        value = self.visit(node.value)
+        return cpp.Assign(targets, value)
+
     def visit_While(self, node):
         test = self.visit(node.test)
         body = [self.visit(x) for x in node.body]

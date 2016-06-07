@@ -201,6 +201,12 @@ else:
         assert build(conv) == ["if (a) {\n\n} else if (b) {\n\n} else {\n\n}"]
 
 
+class TestRaise:
+    def test_type(self):
+        conv = convert("raise NotImplementedError")
+        assert build(conv) == ["throw NotImplementedError();"]
+
+
 class TestBoolOp:
     def test_And(self):
         conv = convert("a and b")

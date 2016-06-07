@@ -125,6 +125,17 @@ class Converter(ast.NodeVisitor):
         orelse = [self.visit(x) for x in node.orelse]
         return cpp.If(test=test, body=body, orelse=orelse)
 
+    def visit_Raise(self, node):
+        if six.PY3:
+            exc = self.visit(node.exc) if node.exc else None
+            cause = self.visit(node.cause) if node.cause else None
+            return cpp.Raise(exc=exc, cause=cause)
+        elif six.PY2:
+            type = self.visit(node.type) if node.type else None
+            inst = self.visit(node.inst) if node.inst else None
+            tback = self.visit(node.tback) if node.tback else None
+            return cpp.Raise(type=type, inst=inst, tback=tback)
+
     def visit_Expr(self, node):
         return cpp.Expr(self.visit(node.value))
 

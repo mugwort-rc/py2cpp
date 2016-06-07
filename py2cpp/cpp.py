@@ -2,6 +2,9 @@
 
 import enum
 
+import six
+
+
 class Type(enum.Enum):
     Builder = 0
     Block = 1
@@ -196,6 +199,23 @@ class If(CodeStatement):
                 "}",
             ])
         return "\n".join(result)
+
+
+class Raise(CodeStatement):
+    def __init__(self, **kwargs):
+        if six.PY3:
+            self.exc = kwargs.get("exc")
+            self.cause = kwargs.get("cause")
+        elif six.PY2:
+            self.type = kwargs.get("type")
+            self.inst = kwargs.get("inst")
+            self.tback = kwargs.get("tback")
+
+    def build(self, ctx):
+        if six.PY3:
+            return ctx.indent() + "throw {}();".format(self.exc.build(ctx))
+        elif six.PY2:
+            return ctx.indent() + "throw {}();".format(self.type.build(ctx))
 
 
 class Expr(CodeStatement):

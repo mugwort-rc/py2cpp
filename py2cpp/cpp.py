@@ -13,6 +13,21 @@ class Type(enum.Enum):
 INDENT = " " * 4
 
 
+class BuildContext(object):
+    def __init__(self):
+        self.indent_level = 0
+
+    def __enter__(self):
+        self.indent_level += 1
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.indent_level -= 1
+        return False if exc_type else True
+
+    def indent(self):
+        return INDENT * self.indent_level
+
+
 class Base(object):
     def __init__(self, type):
         self.type = type
@@ -20,7 +35,10 @@ class Base(object):
     def add_literal(self, literal):
         raise NotImplementedError
 
-    def build(self):
+    def build(self, ctx):
+        """
+        :type ctx: BuildContext
+        """
         raise NotImplementedError
 
 
@@ -36,11 +54,13 @@ class FunctionDef(CodeStatement):
         self.name = name
         self.args = args
 
-    def build(self):
-        return "void {}({}) {{{}}}".format(
+    def build(self, ctx):
+        with ctx:
+            body = [x.build(ctx) for x in self.stmt]
+        return "void {}({}) {{\n{}\n}}".format(
             self.name,
-            self.args.build(),
-            "".join([x.build() for x in self.stmt])
+            self.args.build(ctx),
+            "\n".join(body)
         )
 
 
@@ -50,24 +70,26 @@ class While(CodeStatement):
         self.test = test
         self.orelse = orelse
 
-    def build(self):
+    def build(self, ctx):
+        with ctx:
+            body = [x.build(ctx) for x in self.stmt]
         # TODO: orelse
-        return "while ({}) {{{}}}".format(
-            self.test.build(),
-            "".join([x.build() for x in self.stmt])
+        return "while ({}) {{\n{}\n}}".format(
+            self.test.build(ctx),
+            "\n".join(body)
         )
 
 
 class Expr(CodeStatement):
-    def build(self):
-        return "{};".format(self.stmt.build())
+    def build(self, ctx):
+        return ctx.indent() + "{};".format(self.stmt.build(ctx))
 
 
 class Pass(CodeStatement):
     def __init__(self):
         pass
 
-    def build(self):
+    def build(self, ctx):
         return ""
 
 
@@ -75,16 +97,16 @@ class Break(CodeStatement):
     def __init__(self):
         pass
 
-    def build(self):
-        return "break;"
+    def build(self, ctx):
+        return ctx.indent() + "break;"
 
 
 class Continue(CodeStatement):
     def __init__(self):
         pass
 
-    def build(self):
-        return "continue;"
+    def build(self, ctx):
+        return ctx.indent() + "continue;"
 
 
 class CodeExpression(Base):
@@ -97,13 +119,13 @@ class BoolOp(CodeExpression):
         self.op = op
         self.values = values
 
-    def build(self):
+    def build(self, ctx):
         values = []
         for value in self.values:
             if isinstance(value, BoolOp):
-                values.append("({})".format(value.build()))
+                values.append("({})".format(value.build(ctx)))
             else:
-                values.append(value.build())
+                values.append(value.build(ctx))
         return " {} ".format(self.op).join(values)
 
 
@@ -114,8 +136,8 @@ class BinOp(CodeExpression):
         self.op = op
         self.right = right
 
-    def build(self):
-        return " ".join([self.left.build(), self.op, self.right.build()])
+    def build(self, ctx):
+        return " ".join([self.left.build(ctx), self.op, self.right.build(ctx)])
 
 
 class UnaryOp(CodeExpression):
@@ -123,8 +145,8 @@ class UnaryOp(CodeExpression):
         self.op = op
         self.operand = operand
 
-    def build(self):
-        operand = self.operand.build()
+    def build(self, ctx):
+        operand = self.operand.build(ctx)
         if isinstance(self.operand, BoolOp):
             operand = "({})".format(operand)
         return "{}{}".format(self.op, operand)
@@ -135,9 +157,9 @@ class Lambda(CodeExpression):
         self.args = args
         self.body = body
 
-    def build(self):
-        args = self.args.build()
-        body = self.body.build()
+    def build(self, ctx):
+        args = self.args.build(ctx)
+        body = self.body.build(ctx)
         return "[&]({}) -> auto {{ return {}; }}".format(args, body)
 
 
@@ -147,10 +169,10 @@ class IfExp(CodeExpression):
         self.body = body
         self.orelse = orelse
 
-    def build(self):
-        test = self.test.build()
-        body = self.body.build()
-        orelse = self.orelse.build()
+    def build(self, ctx):
+        test = self.test.build(ctx)
+        body = self.body.build(ctx)
+        orelse = self.orelse.build(ctx)
         return "(({}) ? ({}) : ({}))".format(test, body, orelse)
 
 
@@ -162,9 +184,9 @@ class Call(CodeExpression):
         self.starargs = starargs
         self.kwargs = kwargs
 
-    def build(self):
-        args = ", ".join([x.build() for x in self.args])
-        return "{}({})".format(self.func.build(), args)
+    def build(self, ctx):
+        args = ", ".join([x.build(ctx) for x in self.args])
+        return "{}({})".format(self.func.build(ctx), args)
 
 
 class Num(CodeExpression):
@@ -172,7 +194,7 @@ class Num(CodeExpression):
         super(Num, self).__init__()
         self.n = n
 
-    def build(self):
+    def build(self, ctx):
         return "{}".format(self.n)
 
 
@@ -182,8 +204,8 @@ class Attribute(CodeExpression):
         self.value = value
         self.attr = attr
 
-    def build(self):
-        return "{}.{}".format(self.value.build(), self.attr)
+    def build(self, ctx):
+        return "{}.{}".format(self.value.build(ctx), self.attr)
 
 
 class Name(CodeExpression):
@@ -191,7 +213,7 @@ class Name(CodeExpression):
         super(Name, self).__init__()
         self.id = id
 
-    def build(self):
+    def build(self, ctx):
         # boolean special case
         if self.id == "True":
             return "true"
@@ -208,20 +230,20 @@ class arguments(Base):
         self.defaults = defaults
         self.types = {}
 
-    def get_arg_names(self):
-        return [x.build() for x in self.args]
+    def get_arg_names(self, ctx):
+        return [x.build(ctx) for x in self.args]
 
-    def get_arg_values(self):
-        return [x.build() for x in self.defaults]
+    def get_arg_values(self, ctx):
+        return [x.build(ctx) for x in self.defaults]
 
     def set_arg_type(self, name, type):
-        assert name in self.get_arg_names()
+        #assert name in self.get_arg_names(ctx)
         self.types[name] = type
 
-    def build(self):
+    def build(self, ctx):
         types = dict(self.types)
-        names = self.get_arg_names()
-        values = self.get_arg_values()
+        names = self.get_arg_names(ctx)
+        values = self.get_arg_values(ctx)
         for name in names:
             if name not in types:
                 types[name] = "int"
@@ -241,5 +263,5 @@ class arguments(Base):
 #
 
 class CppScope(Attribute):
-    def build(self):
-        return "{}::{}".format(self.value.build(), self.attr)
+    def build(self, ctx):
+        return "{}::{}".format(self.value.build(ctx), self.attr)

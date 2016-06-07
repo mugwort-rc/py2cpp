@@ -319,3 +319,13 @@ class TestIfExp:
     def test_IfExp(self):
         conv = convert("a if True else b")
         assert build(conv) == ["((true) ? (a) : (b));"]
+
+
+class TestStr:
+    def test_str(self):
+        conv = convert('"test"')
+        assert build(conv) == ['"test";']
+
+    def test_quote(self):
+        conv = convert('"te\\"st"')
+        assert build(conv) == ['"te\\"st";']

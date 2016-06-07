@@ -190,6 +190,9 @@ class Converter(ast.NodeVisitor):
     def visit_Num(self, node):
         return cpp.Num(node.n)
 
+    def visit_Str(self, node):
+        return cpp.Str(s=node.s)
+
     def visit_NameConstant(self, node):
         """for python3 ast
         """

@@ -336,6 +336,14 @@ class Num(CodeExpression):
         return "{}".format(self.n)
 
 
+class Str(CodeExpression):
+    def __init__(self, s):
+        self.s = s
+
+    def build(self, ctx):
+        return "\"{}\"".format(self.s.replace('"', '\\"'))
+
+
 class NameConstant(CodeExpression):
     def __init__(self, value):
         self.value = value

@@ -147,6 +147,15 @@ class TestAugAssign:
         assert build(conv) == ["x = int(x / 1);"]
 
 
+class TestFor:
+    def test_for(self):
+        conv = convert("""
+for i in x:
+    pass
+""".strip())
+        assert build(conv) == ["for (auto i : x) {\n\n}"]
+
+
 class TestWhile:
     def test_while1(self):
         conv = convert("""

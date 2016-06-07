@@ -104,6 +104,13 @@ class Converter(ast.NodeVisitor):
         value = self.visit(node.value)
         return cpp.AugAssign(target, op, value)
 
+    def visit_For(self, node):
+        target = self.visit(node.target)
+        iter = self.visit(node.iter)
+        body = [self.visit(x) for x in node.body]
+        orelse = [self.visit(x) for x in node.orelse]
+        return cpp.For(target=target, iter=iter, body=body, orelse=orelse)
+
     def visit_While(self, node):
         test = self.visit(node.test)
         body = [self.visit(x) for x in node.body]

@@ -126,6 +126,27 @@ class AugAssign(CodeStatement):
         )
 
 
+class For(CodeStatement):
+    def __init__(self, target, iter, body, orelse):
+        super(For, self).__init__(body)
+        self.target = target
+        self.iter = iter
+        self.orelse = orelse
+
+    def build(self, ctx):
+        with ctx:
+            body = [x.build(ctx) for x in self.stmt]
+        # TODO: orelse
+        return "\n".join(["{}for (auto {} : {}) {{".format(
+                ctx.indent(),
+                self.target.build(ctx),
+                self.iter.build(ctx)
+            ),
+            "\n".join(body),
+            ctx.indent() + "}",
+        ])
+
+
 class While(CodeStatement):
     def __init__(self, test, body, orelse):
         super(While, self).__init__(body)

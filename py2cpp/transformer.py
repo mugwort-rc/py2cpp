@@ -3,6 +3,20 @@
 import ast
 
 
+class PrintTransformer(ast.NodeTransformer):
+    """for Python2"""
+    def visit_Print(self, node):
+        if node.__class__ != ast.Print:
+            return node
+        dummy_func = ast.Name(id="print", ctx=ast.Load())
+        keywords = []
+        if not node.nl:
+            end = ast.keyword(arg="end", value=ast.Str(s=""))
+            keywords.append(end)
+        dummy_call = ast.Call(func=dummy_func, args=node.values, keywords=keywords, starargs=None, kwargs=None)
+        return ast.Expr(value=dummy_call)
+
+
 class TupleTransformer(ast.NodeTransformer):
     def visit_Tuple(self, node):
         if node.__class__ != ast.Tuple:
@@ -47,6 +61,7 @@ class FloorDivTransformer(ast.NodeTransformer):
 
 
 Transformers = [
+    PrintTransformer,
     TupleTransformer,
     PowTransformer,
     FloorDivTransformer,

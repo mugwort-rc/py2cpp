@@ -117,6 +117,12 @@ class Converter(ast.NodeVisitor):
         orelse = [self.visit(x) for x in node.orelse]
         return cpp.While(test=test, body=body, orelse=orelse)
 
+    def visit_If(self, node):
+        test = self.visit(node.test)
+        body = [self.visit(x) for x in node.body]
+        orelse = [self.visit(x) for x in node.orelse]
+        return cpp.If(test=test, body=body, orelse=orelse)
+
     def visit_Expr(self, node):
         return cpp.Expr(self.visit(node.value))
 

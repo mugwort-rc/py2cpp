@@ -172,6 +172,15 @@ while True or False:
         assert build(conv) == ["while (true || false) {\n    continue;\n}"]
 
 
+class TestIf:
+    def test_if(self):
+        conv = convert("""
+if True:
+    pass
+""".strip())
+        assert build(conv) == ["if (true) {\n\n}"]
+
+
 class TestBoolOp:
     def test_And(self):
         conv = convert("a and b")

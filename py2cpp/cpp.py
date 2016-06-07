@@ -166,6 +166,25 @@ class While(CodeStatement):
         ])
 
 
+class If(CodeStatement):
+    def __init__(self, test, body, orelse):
+        super(If, self).__init__(body)
+        self.test = test
+        self.orelse = orelse
+
+    def build(self, ctx):
+        with ctx:
+            body = [x.build(ctx) for x in self.stmt]
+        # TODO: orelse
+        return "\n".join(["{}if ({}) {{".format(
+                ctx.indent(),
+                self.test.build(ctx)
+            ),
+            "\n".join(body),
+            ctx.indent() + "}",
+        ])
+
+
 class Expr(CodeStatement):
     def build(self, ctx):
         return ctx.indent() + "{};".format(self.stmt.build(ctx))

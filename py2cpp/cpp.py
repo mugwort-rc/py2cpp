@@ -44,6 +44,20 @@ class FunctionDef(CodeStatement):
         )
 
 
+class While(CodeStatement):
+    def __init__(self, test, body, orelse):
+        super(While, self).__init__(body)
+        self.test = test
+        self.orelse = orelse
+
+    def build(self):
+        # TODO: orelse
+        return "while ({}) {{{}}}".format(
+            self.test.build(),
+            "".join([x.build() for x in self.stmt])
+        )
+
+
 class Expr(CodeStatement):
     def build(self):
         return "{};".format(self.stmt.build())
@@ -55,6 +69,22 @@ class Pass(CodeStatement):
 
     def build(self):
         return ""
+
+
+class Break(CodeStatement):
+    def __init__(self):
+        pass
+
+    def build(self):
+        return "break;"
+
+
+class Continue(CodeStatement):
+    def __init__(self):
+        pass
+
+    def build(self):
+        return "continue;"
 
 
 class CodeExpression(Base):
@@ -162,6 +192,11 @@ class Name(CodeExpression):
         self.id = id
 
     def build(self):
+        # boolean special case
+        if self.id == "True":
+            return "true"
+        elif self.id == "False":
+            return "false"
         return self.id
 
 

@@ -54,6 +54,22 @@ def test():
         assert [x.build() for x in conv] == ["void test() {((x) ? (a) : (b));}"]
 
 
+class TestWhile:
+    def test_while1(self):
+        conv = convert("""
+while True:
+    break
+""".strip())
+        assert [x.build() for x in conv] == ["while (true) {break;}"]
+
+    def test_while2(self):
+        conv = convert("""
+while True or False:
+    continue
+""".strip())
+        assert [x.build() for x in conv] == ["while (true || false) {continue;}"]
+
+
 class TestBoolOp:
     def test_And(self):
         conv = convert("a and b")
@@ -164,4 +180,4 @@ class TestLambda:
 class TestIfExp:
     def test_IfExp(self):
         conv = convert("a if True else b")
-        assert [x.build() for x in conv] == ["((True) ? (a) : (b));"]
+        assert [x.build() for x in conv] == ["((true) ? (a) : (b));"]

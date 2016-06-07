@@ -71,11 +71,23 @@ class Converter(ast.NodeVisitor):
         # TODO: returns (python3)
         return cpp.FunctionDef(name=name, args=args, body=body)
 
+    def visit_While(self, node):
+        test = self.visit(node.test)
+        body = [self.visit(x) for x in node.body]
+        orelse = [self.visit(x) for x in node.orelse]
+        return cpp.While(test=test, body=body, orelse=orelse)
+
     def visit_Expr(self, node):
         return cpp.Expr(self.visit(node.value))
 
     def visit_Pass(self, node):
         return cpp.Pass()
+
+    def visit_Break(self, node):
+        return cpp.Break()
+
+    def visit_Continue(self, node):
+        return cpp.Continue()
 
     #
     # Expressions

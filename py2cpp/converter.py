@@ -97,6 +97,13 @@ class Converter(ast.NodeVisitor):
         value = self.visit(node.value)
         return cpp.Assign(targets, value)
 
+    def visit_AugAssign(self, node):
+        assert node.op.__class__ not in [ast.Pow, ast.FloorDiv]
+        target = self.visit(node.target)
+        op = OPERATOR_MAP[node.op.__class__]
+        value = self.visit(node.value)
+        return cpp.AugAssign(target, op, value)
+
     def visit_While(self, node):
         test = self.visit(node.test)
         body = [self.visit(x) for x in node.body]

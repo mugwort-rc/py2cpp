@@ -112,6 +112,20 @@ class Assign(CodeStatement):
         )
 
 
+class AugAssign(CodeStatement):
+    def __init__(self, target, op, value):
+        self.target = target
+        self.op = op
+        self.value = value
+
+    def build(self, ctx):
+        return ctx.indent() + "{} {}= {};".format(
+            self.target.build(ctx),
+            self.op,
+            self.value.build(ctx)
+        )
+
+
 class While(CodeStatement):
     def __init__(self, test, body, orelse):
         super(While, self).__init__(body)

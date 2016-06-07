@@ -97,6 +97,56 @@ class TestAssign:
         assert build(conv) == ["a = b = c;"]
 
 
+class TestAugAssign:
+    def test_Add(self):
+        conv = convert("x += 1")
+        assert build(conv) == ["x += 1;"]
+
+    def test_Sub(self):
+        conv = convert("x -= 1")
+        assert build(conv) == ["x -= 1;"]
+
+    def test_Mult(self):
+        conv = convert("x *= 1")
+        assert build(conv) == ["x *= 1;"]
+
+    def test_Div(self):
+        conv = convert("x /= 1")
+        assert build(conv) == ["x /= 1;"]
+
+    def test_Mod(self):
+        conv = convert("x %= 1")
+        assert build(conv) == ["x %= 1;"]
+
+    def test_LShift(self):
+        conv = convert("x <<= 1")
+        assert build(conv) == ["x <<= 1;"]
+
+    def test_RShift(self):
+        conv = convert("x >>= 1")
+        assert build(conv) == ["x >>= 1;"]
+
+    def test_BitOr(self):
+        conv = convert("x |= 1")
+        assert build(conv) == ["x |= 1;"]
+
+    def test_BitXor(self):
+        conv = convert("x ^= 1")
+        assert build(conv) == ["x ^= 1;"]
+
+    def test_BitAnd(self):
+        conv = convert("x &= 1")
+        assert build(conv) == ["x &= 1;"]
+
+    def test_Pow(self):
+        conv = convert("x **= 1")
+        assert build(conv) == ["x = std::pow(x, 1);"]
+
+    def test_FloorDiv(self):
+        conv = convert("x //= 1")
+        assert build(conv) == ["x = int(x / 1);"]
+
+
 class TestWhile:
     def test_while1(self):
         conv = convert("""

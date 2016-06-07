@@ -371,6 +371,14 @@ class Name(CodeExpression):
         return self.id
 
 
+class Tuple(CodeExpression):
+    def __init__(self, elts):
+        assert False
+
+    def build(self, ctx):
+        assert False
+
+
 class arguments(Base):
     def __init__(self, args, vararg, kwarg, defaults):
         self.args = args

@@ -204,6 +204,10 @@ class Converter(ast.NodeVisitor):
         return cpp.Name(node.id)
         # TODO: node.ctx
 
+    def visit_Tuple(self, node):
+        elts = [self.visit(x) for x in node.elts]
+        return cpp.Tuple(elts=elts)
+
     def visit_arguments(self, node):
         args = [self.visit(x) for x in node.args]
         vararg = node.vararg

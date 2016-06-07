@@ -2,6 +2,15 @@
 
 import ast
 
+
+class TupleTransformer(ast.NodeTransformer):
+    def visit_Tuple(self, node):
+        if node.__class__ != ast.Tuple:
+            return node
+        dummy_func = ast.Name(id="tuple", ctx=ast.Load())
+        return ast.Call(func=dummy_func, args=node.elts, keywords=[], starargs=None, kwargs=None)
+
+
 class PowTransformer(ast.NodeTransformer):
     def visit_AugAssign(self, node):
         if node.op.__class__ != ast.Pow:
@@ -38,6 +47,7 @@ class FloorDivTransformer(ast.NodeTransformer):
 
 
 Transformers = [
+    TupleTransformer,
     PowTransformer,
     FloorDivTransformer,
 ]

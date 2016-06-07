@@ -37,6 +37,21 @@ class MathPowHook(CallHook):
         return ret
 
 
+class TupleHook(CallHook):
+    def match(self, node):
+        if node.__class__ != ast.Call:
+            return False
+        func = node.func
+        if node.func.__class__ != ast.Name:
+            return False
+        return node.func.id == "tuple"
+
+    def apply(self, node, ret):
+        ret.func = cpp.CppScope(value=cpp.Name(id="std"), attr="make_tuple")
+        return ret
+
+
 Hooks = [
-    MathPowHook
+    MathPowHook,
+    TupleHook,
 ]

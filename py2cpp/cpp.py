@@ -176,13 +176,26 @@ class If(CodeStatement):
         with ctx:
             body = [x.build(ctx) for x in self.stmt]
         # TODO: orelse
-        return "\n".join(["{}if ({}) {{".format(
+        result = [
+            "{}if ({}) {{".format(
                 ctx.indent(),
                 self.test.build(ctx)
             ),
             "\n".join(body),
             ctx.indent() + "}",
-        ])
+        ]
+        if len(self.orelse) == 1 and self.orelse[0].__class__ == If:
+            lines = self.orelse[0].build(ctx).split("\n")
+            assert len(lines) > 1
+            result[-1] = "}} else {}".format(lines[0])
+            result.extend(lines[1:])
+        elif self.orelse:
+            result[-1] = "} else {"
+            result.extend([
+            ] + [x.build(ctx) for x in self.orelse] + [
+                "}",
+            ])
+        return "\n".join(result)
 
 
 class Expr(CodeStatement):

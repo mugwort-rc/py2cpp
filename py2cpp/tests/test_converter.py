@@ -180,6 +180,26 @@ if True:
 """.strip())
         assert build(conv) == ["if (true) {\n\n}"]
 
+    def test_if_orelse1(self):
+        conv = convert("""
+if True:
+    pass
+else:
+    pass
+""".strip())
+        assert build(conv) == ["if (true) {\n\n} else {\n\n}"]
+
+    def test_if_orelse2(self):
+        conv = convert("""
+if a:
+    pass
+elif b:
+    pass
+else:
+    pass
+""".strip())
+        assert build(conv) == ["if (a) {\n\n} else if (b) {\n\n} else {\n\n}"]
+
 
 class TestBoolOp:
     def test_And(self):

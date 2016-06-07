@@ -77,6 +77,16 @@ class test(a, b):
         assert build(conv) == ["class test : public a, public b {\n    void test(int self) {\n\n    }\n};"]
 
 
+class TestReturn:
+    def test_return(self):
+        conv = convert("return")
+        assert build(conv) == ["return;"]
+
+    def test_return_with_value(self):
+        conv = convert("return 1")
+        assert build(conv) == ["return 1;"]
+
+
 class TestWhile:
     def test_while1(self):
         conv = convert("""

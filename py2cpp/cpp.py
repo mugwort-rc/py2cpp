@@ -89,6 +89,17 @@ class ClassDef(CodeStatement):
         ])
 
 
+class Return(CodeStatement):
+    def __init__(self, value):
+        self.value = value
+
+    def build(self, ctx):
+        if self.value:
+            return ctx.indent() + "return {};".format(self.value.build(ctx))
+        else:
+            return ctx.indent() + "return;"
+
+
 class While(CodeStatement):
     def __init__(self, test, body, orelse):
         super(While, self).__init__(body)

@@ -85,6 +85,13 @@ class Converter(ast.NodeVisitor):
         else:
             return cpp.ClassDef(name=name, bases=bases, body=body)
 
+    def visit_Return(self, node):
+        if node.value:
+            value = self.visit(node.value)
+        else:
+            value = None
+        return cpp.Return(value=value)
+
     def visit_While(self, node):
         test = self.visit(node.test)
         body = [self.visit(x) for x in node.body]

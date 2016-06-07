@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
+
 import ast
 
 import six
 
-import cpp
-import hook
-import transformer
+from . import cpp
+from . import hook
+from . import transformer
 
 BOOLOP_MAP = {
     ast.And: "&&",
@@ -177,6 +179,12 @@ class Converter(ast.NodeVisitor):
     def visit_Num(self, node):
         return cpp.Num(node.n)
 
+    def visit_NameConstant(self, node):
+        """for python3 ast
+        """
+        value = node.value
+        return cpp.NameConstant(value=value)
+
     def visit_Attribute(self, node):
         value = self.visit(node.value)
         return cpp.Attribute(value, node.attr)
@@ -193,6 +201,15 @@ class Converter(ast.NodeVisitor):
         ret = cpp.arguments(args=args, vararg=vararg, kwarg=kwarg, defaults=defaults)
         self.arguments.append(ret)
         return ret
+
+    def visit_arg(self, node):
+        """for python3 ast
+        """
+        arg = node.arg
+        # TODO: node.annotation
+        # TODO: node.lineno
+        # TODO: node.col_offset
+        return cpp.arg(arg=arg)
 
     def visit_keyword(self, node):
         name = node.name

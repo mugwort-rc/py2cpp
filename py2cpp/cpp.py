@@ -316,6 +316,17 @@ class Num(CodeExpression):
         return "{}".format(self.n)
 
 
+class NameConstant(CodeExpression):
+    def __init__(self, value):
+        self.value = value
+
+    def build(self, ctx):
+        # boolean special case
+        if type(self.value) == bool:
+            return "true" if self.value else "false"
+        return self.value
+
+
 class Attribute(CodeExpression):
     def __init__(self, value, attr):
         super(Attribute, self).__init__()
@@ -374,6 +385,14 @@ class arguments(Base):
                 value = values[i - start]
                 args.append("{} {}={}".format(types[name], name, value))
         return ", ".join(args)
+
+
+class arg(Base):
+    def __init__(self, arg):
+        self.arg = arg
+
+    def build(self, ctx):
+        return self.arg
 
 
 class keyword(Base):

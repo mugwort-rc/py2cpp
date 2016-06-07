@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
+
 import ast
 
-import cpp
+from . import cpp
 
 class Hook(object):
     def __init__(self, visitor):

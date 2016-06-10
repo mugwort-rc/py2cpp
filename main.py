@@ -16,14 +16,18 @@ from py2cpp.cpp import BuildContext
 def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=argparse.FileType("r"))
+    parser.add_argument("--using-qt", action="store_true")
 
     args = parser.parse_args(argv)
+
+    if args.using_qt:
+        from py2cpp import qt
 
     node = ast.parse(args.input.read())
     conv = Converter()
     cpp_node = conv.visit(node)
 
-    ctx = BuildContext()
+    ctx = BuildContext.create()
     print("\n\n".join([x.build(ctx) for x in cpp_node]))
 
     return 0

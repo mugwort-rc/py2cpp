@@ -4,7 +4,11 @@ from __future__ import absolute_import
 
 import ast
 
+import six
+
 from . import cpp
+from . import docstring
+
 
 class Hook(object):
     def __init__(self, visitor):
@@ -51,7 +55,37 @@ class TupleHook(CallHook):
         return ret
 
 
+class NoneHook(CallHook):
+    def match(self, node):
+        if six.PY3:
+            if node.__class__ != ast.NameConstant:
+                return False
+            return node.value is None
+        elif six.PY2:
+            if node.__class__ != ast.Name:
+                return False
+            return node.id == "None"
+
+    def apply(self, node, ret):
+        ret = cpp.Name(id="nullptr")
+        return ret
+
+
+class ArgTypeHook(CallHook):
+    def match(self, node):
+        return node.__class__ == ast.FunctionDef
+
+    def apply(self, node, ret):
+        if ret.docstring is None:
+            return ret
+        for type in docstring.get_params(ret.docstring):
+            ret.args.set_arg_type(type["param"], cpp.type_registry.convert(type["type"]))
+        return ret
+
+
 Hooks = [
     MathPowHook,
     TupleHook,
+    NoneHook,
+    ArgTypeHook,
 ]

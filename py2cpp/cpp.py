@@ -515,7 +515,7 @@ class CppTypeRegistry(types.TypeRegistry):
         if type in self:
             return self.type_map[type]
         # TODO
-        raise NotImplementedError
+        return "int"
 
 
 type_registry = CppTypeRegistry()

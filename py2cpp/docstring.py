@@ -2,7 +2,7 @@
 
 import re
 
-PARAM_RE = re.compile(r":param(?: (?P<type>\w+))? (?P<param>\w+): (?P<doc>.*)")
+PARAM_RE = re.compile(r":param(?: (?P<type>\w+))? (?P<param>\w+):(?: (?P<doc>.*))?")
 RTYPE_RE = re.compile(r":rtype: (?P<rtype>.*)")
 TYPE_OF_RE = re.compile(r"^(?P<type1>\w+?) of (?P<type2>.+)$")
 
@@ -10,10 +10,11 @@ TYPE_OF_RE = re.compile(r"^(?P<type1>\w+?) of (?P<type2>.+)$")
 def get_params(docstring):
     result = []
     for m in PARAM_RE.finditer(docstring):
+        type, param, doc = m.groups()
         result.append({
-            "type": m.group("type").strip(),
-            "param": m.group("param").strip(),
-            "doc": m.group("doc").strip(),
+            "type": type.strip() if type else None,
+            "param": param.strip() if param else None,
+            "doc": doc.strip() if doc else None,
         })
     return result
 

@@ -12,7 +12,7 @@ def convert(src):
 
 
 def build(node):
-    ctx = BuildContext()
+    ctx = BuildContext.create()
     return [x.build(ctx) for x in node]
 
 
@@ -82,7 +82,7 @@ class test(a, b):
     def test(self):
         pass
 """.strip())
-        assert build(conv) == ["class test : public a, public b {\n    void test(int self) {\n\n    }\n};"]
+        assert build(conv) == ["class test : public a, public b {\n    void test() {\n\n    }\n};"]
 
     def test_docstring(self):
         conv = convert("""
@@ -327,7 +327,7 @@ class TestLambda:
         conv = Converter()
         ret = conv.visit(node)
         conv.arguments[0].set_arg_type("x", "double")
-        ctx = BuildContext()
+        ctx = BuildContext.create()
         assert [x.build(ctx) for x in ret] == ["[&](double x) -> auto { return x + 1; };"]
 
 

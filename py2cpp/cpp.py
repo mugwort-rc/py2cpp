@@ -20,18 +20,37 @@ INDENT = " " * 4
 
 
 class BuildContext(object):
-    def __init__(self):
-        self.indent_level = 0
+    def __init__(self, ctx, node):
+        self.indent_level = ctx.indent_level + 1
+        self.stack = ctx.stack + [node]
 
     def __enter__(self):
-        self.indent_level += 1
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.indent_level -= 1
         return False if exc_type else True
 
     def indent(self):
         return INDENT * self.indent_level
+
+    def is_class_method(self):
+        if len(self.stack) < 2:
+            return False
+        last = self.stack[-1]
+        if last.__class__ != FunctionDef:
+            return False
+        cls = self.stack[-2]
+        return cls.__class__ == ClassDef
+
+    @staticmethod
+    def create():
+        class _DummyContext(object):
+            indent_level = -1
+            stack = []
+
+        ret = BuildContext(_DummyContext(), None)
+        ret.stack = []
+        return ret
 
 
 class Base(object):
@@ -62,18 +81,18 @@ class FunctionDef(CodeStatement):
         self.docstring = docstring
 
     def build(self, ctx):
-        with ctx:
-            body = [x.build(ctx) for x in self.stmt]
-        return "\n".join([
-            "{}{} {}({}) {{".format(
-                ctx.indent(),
-                self.rtype(),
-                self.name,
-                self.args.build(ctx),
-            ),
-            "\n".join(body),
-            ctx.indent() + "}",
-        ])
+        with BuildContext(ctx, self) as new_ctx:
+            body = [x.build(new_ctx) for x in self.stmt]
+            return "\n".join([
+                "{}{} {}({}) {{".format(
+                    ctx.indent(),
+                    self.rtype(),
+                    self.name,
+                    self.args.build(new_ctx),
+                ),
+                "\n".join(body),
+                ctx.indent() + "}",
+            ])
 
     def rtype(self):
         if self.docstring is None:
@@ -94,17 +113,17 @@ class ClassDef(CodeStatement):
         self.docstring = docstring
 
     def build(self, ctx):
-        with ctx:
-            body = [x.build(ctx) for x in self.stmt]
-        return "\n".join([
-            "{}class {}{} {{".format(
-                ctx.indent(),
-                self.name,
-                " : {}".format(", ".join(["public " + x.build(ctx) for x in self.bases])) if self.bases else "",
-            ),
-            "\n".join(body),
-            ctx.indent() + "};",
-        ])
+        with BuildContext(ctx, self) as new_ctx:
+            body = [x.build(new_ctx) for x in self.stmt]
+            return "\n".join([
+                "{}class {}{} {{".format(
+                    ctx.indent(),
+                    self.name,
+                    " : {}".format(", ".join(["public " + x.build(ctx) for x in self.bases])) if self.bases else "",
+                ),
+                "\n".join(body),
+                ctx.indent() + "};",
+            ])
 
 
 class Return(CodeStatement):
@@ -152,17 +171,17 @@ class For(CodeStatement):
         self.orelse = orelse
 
     def build(self, ctx):
-        with ctx:
-            body = [x.build(ctx) for x in self.stmt]
-        # TODO: orelse
-        return "\n".join(["{}for (auto {} : {}) {{".format(
-                ctx.indent(),
-                self.target.build(ctx),
-                self.iter.build(ctx)
-            ),
-            "\n".join(body),
-            ctx.indent() + "}",
-        ])
+        with BuildContext(ctx, self) as new_ctx:
+            body = [x.build(new_ctx) for x in self.stmt]
+            # TODO: orelse
+            return "\n".join(["{}for (auto {} : {}) {{".format(
+                    ctx.indent(),
+                    self.target.build(ctx),
+                    self.iter.build(ctx)
+                ),
+                "\n".join(body),
+                ctx.indent() + "}",
+            ])
 
 
 class While(CodeStatement):
@@ -172,16 +191,16 @@ class While(CodeStatement):
         self.orelse = orelse
 
     def build(self, ctx):
-        with ctx:
-            body = [x.build(ctx) for x in self.stmt]
-        # TODO: orelse
-        return "\n".join(["{}while ({}) {{".format(
-                ctx.indent(),
-                self.test.build(ctx)
-            ),
-            "\n".join(body),
-            ctx.indent() + "}",
-        ])
+        with BuildContext(ctx, self) as new_ctx:
+            body = [x.build(new_ctx) for x in self.stmt]
+            # TODO: orelse
+            return "\n".join(["{}while ({}) {{".format(
+                    ctx.indent(),
+                    self.test.build(ctx)
+                ),
+                "\n".join(body),
+                ctx.indent() + "}",
+            ])
 
 
 class If(CodeStatement):
@@ -191,29 +210,29 @@ class If(CodeStatement):
         self.orelse = orelse
 
     def build(self, ctx):
-        with ctx:
-            body = [x.build(ctx) for x in self.stmt]
-        # TODO: orelse
-        result = [
-            "{}if ({}) {{".format(
-                ctx.indent(),
-                self.test.build(ctx)
-            ),
-            "\n".join(body),
-            ctx.indent() + "}",
-        ]
-        if len(self.orelse) == 1 and self.orelse[0].__class__ == If:
-            lines = self.orelse[0].build(ctx).split("\n")
-            assert len(lines) > 1
-            result[-1] = "}} else {}".format(lines[0])
-            result.extend(lines[1:])
-        elif self.orelse:
-            result[-1] = "} else {"
-            result.extend([
-            ] + [x.build(ctx) for x in self.orelse] + [
-                "}",
-            ])
-        return "\n".join(result)
+        with BuildContext(ctx, self) as new_ctx:
+            body = [x.build(new_ctx) for x in self.stmt]
+            # TODO: orelse
+            result = [
+                "{}if ({}) {{".format(
+                    ctx.indent(),
+                    self.test.build(ctx)
+                ),
+                "\n".join(body),
+                ctx.indent() + "}",
+            ]
+            if len(self.orelse) == 1 and self.orelse[0].__class__ == If:
+                lines = self.orelse[0].build(ctx).split("\n")
+                assert len(lines) > 1
+                result[-1] = "}} else {}".format(lines[0])
+                result.extend(lines[1:])
+            elif self.orelse:
+                result[-1] = "} else {"
+                result.extend([
+                ] + [x.build(ctx) for x in self.orelse] + [
+                    "}",
+                ])
+            return "\n".join(result)
 
 
 class Raise(CodeStatement):
@@ -435,6 +454,8 @@ class arguments(Base):
             else:
                 value = values[i - start]
                 args.append("{} {}={}".format(types[name], name, value))
+        if ctx.is_class_method() and names[0] == "self":
+            args = args[1:]
         return ", ".join(args)
 
 

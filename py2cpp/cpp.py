@@ -42,6 +42,13 @@ class BuildContext(object):
         cls = self.stack[-2]
         return cls.__class__ == ClassDef
 
+    def in_class(self):
+        for node in reversed(self.stack):
+            if node.__class__ != ClassDef:
+                continue
+            return True
+        return False
+
     @staticmethod
     def create():
         class _DummyContext(object):
@@ -83,6 +90,17 @@ class FunctionDef(CodeStatement):
     def build(self, ctx):
         with BuildContext(ctx, self) as new_ctx:
             body = [x.build(new_ctx) for x in self.stmt]
+            # __init__ special case
+            if self.name == "__init__" and ctx.in_class():
+                return "\n".join([
+                    "{}{}({}) {{".format(
+                        ctx.indent(),
+                        ctx.stack[-1].name,
+                        self.args.build(new_ctx),
+                    ),
+                    "\n".join(body),
+                    ctx.indent() + "}",
+                ])
             return "\n".join([
                 "{}{} {}({}) {{".format(
                     ctx.indent(),

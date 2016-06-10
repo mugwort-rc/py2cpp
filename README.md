@@ -9,12 +9,15 @@ Usage
 ```
 $ cat helloworld.py
 def main():
+    """
+    :rtype: int
+    """
     print("Hello World!")
-    return
+    return 0
 
 $ python -m py2cpp helloworld.py
-void main() {
+int main() {
     print("Hello World!");
-    return;
+    return 0;
 }
 ```

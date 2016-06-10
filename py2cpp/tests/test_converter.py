@@ -59,6 +59,14 @@ def test():
 """.strip())
         assert build(conv) == ["void test() {\n    ((x) ? (a) : (b));\n}"]
 
+    def test_docstring(self):
+        conv = convert("""
+def test():
+    "docstring"
+    pass
+""".strip())
+        assert conv[0].docstring == "docstring"
+
 
 class TestClassDef:
     def test_pass(self):
@@ -75,6 +83,14 @@ class test(a, b):
         pass
 """.strip())
         assert build(conv) == ["class test : public a, public b {\n    void test(int self) {\n\n    }\n};"]
+
+    def test_docstring(self):
+        conv = convert("""
+class test:
+    "docstring"
+    pass
+""".strip())
+        assert conv[0].docstring == "docstring"
 
 
 class TestReturn:

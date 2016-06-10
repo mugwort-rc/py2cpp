@@ -11,9 +11,9 @@ def get_params(docstring):
     result = []
     for m in PARAM_RE.finditer(docstring):
         result.append({
-            "type": m.group("type"),
-            "param": m.group("param"),
-            "doc": m.group("doc"),
+            "type": m.group("type").strip(),
+            "param": m.group("param").strip(),
+            "doc": m.group("doc").strip(),
         })
     return result
 
@@ -22,7 +22,7 @@ def get_rtype(docstring):
     m = RTYPE_RE.search(docstring)
     if not m:
         return None
-    return m.group("rtype")
+    return m.group("rtype").strip()
 
 
 def parse_type_of(s):
@@ -30,4 +30,4 @@ def parse_type_of(s):
     if not m:
         return s
     else:
-        return (m.group("type1"), parse_type_of(m.group("type2")))
+        return (m.group("type1").strip(), parse_type_of(m.group("type2").strip()))

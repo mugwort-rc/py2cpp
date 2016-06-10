@@ -4,6 +4,9 @@ import enum
 
 import six
 
+from . import docstring
+from . import types
+
 
 class Type(enum.Enum):
     Builder = 0
@@ -52,17 +55,19 @@ class CodeStatement(Base):
 
 
 class FunctionDef(CodeStatement):
-    def __init__(self, name, args, body):
+    def __init__(self, name, args, body, docstring):
         super(FunctionDef, self).__init__(body)
         self.name = name
         self.args = args
+        self.docstring = docstring
 
     def build(self, ctx):
         with ctx:
             body = [x.build(ctx) for x in self.stmt]
         return "\n".join([
-            "{}void {}({}) {{".format(
+            "{}{} {}({}) {{".format(
                 ctx.indent(),
+                self.rtype(),
                 self.name,
                 self.args.build(ctx),
             ),
@@ -70,13 +75,23 @@ class FunctionDef(CodeStatement):
             ctx.indent() + "}",
         ])
 
+    def rtype(self):
+        if self.docstring is None:
+            return "void"
+        rtype = docstring.get_rtype(self.docstring)
+        if rtype is None or rtype not in type_registry:
+            return "void"
+        rtype = docstring.parse_type_of(rtype)
+        return type_registry.convert(rtype)
+
 
 class ClassDef(CodeStatement):
-    def __init__(self, name, bases, body, **kwargs):
+    def __init__(self, name, bases, body, docstring, **kwargs):
         super(ClassDef, self).__init__(body)
         self.name = name
         self.bases = bases
         self.keywords = kwargs.get("keywords", [])
+        self.docstring = docstring
 
     def build(self, ctx):
         with ctx:
@@ -450,3 +465,29 @@ class keyword(Base):
 class CppScope(Attribute):
     def build(self, ctx):
         return "{}::{}".format(self.value.build(ctx), self.attr)
+
+
+#
+# type registry
+#
+
+class CppTypeRegistry(types.TypeRegistry):
+    def convert(self, type):
+        if type in self:
+            return self.type_map[type]
+        # TODO
+        raise NotImplementedError
+
+
+type_registry = CppTypeRegistry()
+
+# built-in types
+type_registry.register("bool", "bool")
+type_registry.register("int", "int")
+type_registry.register("long", "long")
+type_registry.register("float", "double")
+type_registry.register("complex", "std::complex<double>")
+type_registry.register("str", "std::string")
+type_registry.register("bytearray", "std::string")
+#type_registry.register("list", "std::vector")
+#type_registry.register("tuple", "std::tuple")

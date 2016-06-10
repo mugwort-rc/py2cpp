@@ -71,9 +71,12 @@ class Converter(ast.NodeVisitor):
         name = node.name
         args = self.visit(node.args)
         body = [self.visit(x) for x in node.body]
+        docstring = ast.get_docstring(node)
+        if docstring:
+            body = body[1:]
         # TODO: decorator_list
         # TODO: returns (python3)
-        return cpp.FunctionDef(name=name, args=args, body=body)
+        return cpp.FunctionDef(name=name, args=args, body=body, docstring=docstring)
 
     def visit_ClassDef(self, node):
         name = node.name
@@ -81,11 +84,14 @@ class Converter(ast.NodeVisitor):
         if six.PY3:
             keywords = [self.visit(x) for x in node.keywords]
         body = [self.visit(x) for x in node.body]
+        docstring = ast.get_docstring(node)
+        if docstring:
+            body = body[1:]
         # TODO: decorator_list
         if six.PY3:
-            return cpp.ClassDef(name=name, bases=bases, keywords=keywords, body=body)
+            return cpp.ClassDef(name=name, bases=bases, keywords=keywords, body=body, docstring=docstring)
         else:
-            return cpp.ClassDef(name=name, bases=bases, body=body)
+            return cpp.ClassDef(name=name, bases=bases, body=body, docstring=docstring)
 
     def visit_Return(self, node):
         if node.value:

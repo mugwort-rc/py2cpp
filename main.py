@@ -28,6 +28,7 @@ def main(argv):
     cpp_node = conv.visit(node)
 
     ctx = BuildContext.create()
+    print('#include "py2cpp/py2cpp.hpp"\n')
     print("\n\n".join([x.build(ctx) for x in cpp_node]))
 
     return 0

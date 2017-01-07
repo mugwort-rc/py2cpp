@@ -83,9 +83,24 @@ class ArgTypeHook(CallHook):
         return ret
 
 
+class RangeHook(CallHook):
+    def match(self, node):
+        if node.__class__ != ast.Call:
+            return False
+        func = node.func
+        if node.func.__class__ != ast.Name:
+            return False
+        return node.func.id == "range"
+
+    def apply(self, node, ret):
+        ret.func = cpp.CppScope(value=cpp.Name(id="py2cpp"), attr="range")
+        return ret
+
+
 Hooks = [
     MathPowHook,
     TupleHook,
     NoneHook,
     ArgTypeHook,
+    RangeHook,
 ]

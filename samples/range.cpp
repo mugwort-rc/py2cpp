@@ -1,3 +1,5 @@
+// generate by py2cpp
+// original source code: samples/range.py
 #include "py2cpp/py2cpp.hpp"
 
 int main() {

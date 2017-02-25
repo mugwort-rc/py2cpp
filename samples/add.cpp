@@ -1,3 +1,5 @@
+// generate by py2cpp
+// original source code: samples/add.py
 #include "py2cpp/py2cpp.hpp"
 
 double add(double x, double y) {

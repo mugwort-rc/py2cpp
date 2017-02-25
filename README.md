@@ -15,6 +15,8 @@ def main() -> int:
     return 0
 
 $ python -m py2cpp helloworld.py
+// generate by py2cpp
+// original source code: helloworld.py
 #include "py2cpp/py2cpp.hpp"
 
 int main() {
@@ -35,6 +37,8 @@ def main() -> int:
     return 0
 
 $ python -m py2cpp range.py
+// generate by py2cpp
+// original source code: range.py
 #include "py2cpp/py2cpp.hpp"
 
 int main() {
@@ -59,6 +63,8 @@ def main() -> int:
     return 0
 
 $ python -m py2cpp add.py
+// generate by py2cpp
+// original source code: add.py
 #include "py2cpp/py2cpp.hpp"
 
 double add(double x, double y) {

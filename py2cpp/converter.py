@@ -189,9 +189,11 @@ class Converter(ast.NodeVisitor):
         func = self.visit(node.func)
         args = [self.visit(x) for x in node.args]
         keywords = [self.visit(x) for x in node.keywords]
-        starargs = self.visit(node.starargs) if node.starargs else None
-        kwargs = self.visit(node.kwargs) if node.kwargs else None
-        return cpp.Call(func, args, keywords, starargs, kwargs)
+        if six.PY2:
+            starargs = self.visit(node.starargs) if node.starargs else None
+            kwargs = self.visit(node.kwargs) if node.kwargs else None
+            return cpp.Call(func, args, keywords, starargs, kwargs)
+        return cpp.Call(func, args, keywords)
 
     def visit_Num(self, node):
         return cpp.Num(node.n)
@@ -236,6 +238,9 @@ class Converter(ast.NodeVisitor):
         return cpp.arg(arg=arg)
 
     def visit_keyword(self, node):
-        name = node.name
+        if six.PY3:
+            name = node.arg
+        else:
+            name = node.name
         value = self.visit(node.value)
         return cpp.keyword(name=name, value=value)

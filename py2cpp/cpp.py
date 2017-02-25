@@ -2,6 +2,7 @@
 
 import enum
 import sys
+from ast import iter_fields
 
 import six
 
@@ -9,8 +10,37 @@ from . import docstring
 from . import types
 
 
-PY35 = sys.version_info > (3, 5)  # FunctionDef returns
-PY36 = sys.version_info > (3, 6)  # arg annotation
+PY35 = sys.version_info > (3, 5)  # FunctionDef returns & arg annotation
+
+# from ast.py
+def dump(node, annotate_fields=True, include_attributes=False):
+    """
+    Return a formatted dump of the tree in *node*.  This is mainly useful for
+    debugging purposes.  The returned string will show the names and the values
+    for fields.  This makes the code impossible to evaluate, so if evaluation is
+    wanted *annotate_fields* must be set to False.  Attributes such as line
+    numbers and column offsets are not dumped by default.  If this is wanted,
+    *include_attributes* can be set to True.
+    """
+    def _format(node):
+        if isinstance(node, AST):
+            fields = [(a, _format(b)) for a, b in iter_fields(node)]
+            rv = '%s(%s' % (node.__class__.__name__, ', '.join(
+                ('%s=%s' % field for field in fields)
+                if annotate_fields else
+                (b for a, b in fields)
+            ))
+            if include_attributes and node._attributes:
+                rv += fields and ', ' or ' '
+                rv += ', '.join('%s=%s' % (a, _format(getattr(node, a)))
+                                for a in node._attributes)
+            return rv + ')'
+        elif isinstance(node, list):
+            return '[%s]' % ', '.join(_format(x) for x in node)
+        return repr(node)
+    if not isinstance(node, AST):
+        raise TypeError('expected AST, got %r' % node.__class__.__name__)
+    return _format(node)
 
 
 class Type(enum.Enum):
@@ -66,6 +96,9 @@ class BuildContext(object):
 
 
 class Base(object):
+
+    _fields = []
+
     def __init__(self, type):
         self.type = type
 
@@ -78,20 +111,41 @@ class Base(object):
         """
         raise NotImplementedError
 
+AST = Base
+
+
+class Module(Base):
+
+    _fields = ["body"]
+
+    def __init__(self, body):
+        super(Module, self).__init__(Type.Block)
+        self.body = body
+
+    def build(self, ctx):
+        return "\n\n".join([x.build(ctx) for x in self.body])
+
 
 class CodeStatement(Base):
+
+    _fields = ["stmt"]
+
     def __init__(self, stmt):
         super(CodeStatement, self).__init__(Type.Stmt)
         self.stmt = stmt
 
 
 class FunctionDef(CodeStatement):
+
+    _fields = ["name", "args", "body", "docstring", "returns"]
+
     def __init__(self, name, args, body, docstring, returns=None):
         super(FunctionDef, self).__init__(body)
         self.name = name
         self.args = args
         self.docstring = docstring
         self.returns = returns
+        self.body = self.stmt
 
     def build(self, ctx):
         with BuildContext(ctx, self) as new_ctx:
@@ -121,15 +175,18 @@ class FunctionDef(CodeStatement):
     def rtype(self, ctx):
         if self.returns:
             rtype = self.returns.build(ctx)
-            return CppTypeRegistry.detect(rtype)
+            return CppTypeRegistry.detect(rtype, rettype=True)
         if self.docstring is None:
             return "void"
         rtype = docstring.get_rtype(self.docstring)
         rtype = docstring.parse_type_of(rtype)
-        return CppTypeRegistry.detect(rtype)
+        return CppTypeRegistry.detect(rtype, rettype=True)
 
 
 class ClassDef(CodeStatement):
+
+    _fields = ["name", "bases", "body", "docstring"]
+
     def __init__(self, name, bases, body, docstring, **kwargs):
         super(ClassDef, self).__init__(body)
         self.name = name
@@ -152,6 +209,9 @@ class ClassDef(CodeStatement):
 
 
 class Return(CodeStatement):
+
+    _fields = ["value"]
+
     def __init__(self, value):
         self.value = value
 
@@ -163,6 +223,9 @@ class Return(CodeStatement):
 
 
 class Assign(CodeStatement):
+
+    _fields = ["targets", "value"]
+
     def __init__(self, targets, value):
         self.targets = targets
         self.value = value
@@ -175,6 +238,9 @@ class Assign(CodeStatement):
 
 
 class AugAssign(CodeStatement):
+
+    _fields = ["target", "op", "value"]
+
     def __init__(self, target, op, value):
         self.target = target
         self.op = op
@@ -189,11 +255,15 @@ class AugAssign(CodeStatement):
 
 
 class For(CodeStatement):
+
+    _fields = ["target", "iter", "body", "orelse"]
+
     def __init__(self, target, iter, body, orelse):
         super(For, self).__init__(body)
         self.target = target
         self.iter = iter
         self.orelse = orelse
+        self.body = self.stmt
 
     def build(self, ctx):
         with BuildContext(ctx, self) as new_ctx:
@@ -210,6 +280,9 @@ class For(CodeStatement):
 
 
 class While(CodeStatement):
+
+    _fields = ["test", "body", "orelse"]
+
     def __init__(self, test, body, orelse):
         super(While, self).__init__(body)
         self.test = test
@@ -229,6 +302,9 @@ class While(CodeStatement):
 
 
 class If(CodeStatement):
+
+    _fields = ["test", "body", "orelse"]
+
     def __init__(self, test, body, orelse):
         super(If, self).__init__(body)
         self.test = test
@@ -261,6 +337,12 @@ class If(CodeStatement):
 
 
 class Raise(CodeStatement):
+
+    if six.PY3:
+        _fields = ["exc", "cause"]
+    else:
+        _fields = ["type", "inst", "tback"]
+
     def __init__(self, **kwargs):
         if six.PY3:
             self.exc = kwargs.get("exc")
@@ -278,6 +360,9 @@ class Raise(CodeStatement):
 
 
 class Expr(CodeStatement):
+
+    _fields = ["value"]
+
     def __init__(self, value):
         super(Expr, self).__init__(value)
         self.value = value
@@ -317,6 +402,9 @@ class CodeExpression(Base):
 
 
 class BoolOp(CodeExpression):
+
+    _fields = ["op", "values"]
+
     def __init__(self, op, values):
         self.op = op
         self.values = values
@@ -332,6 +420,9 @@ class BoolOp(CodeExpression):
 
 
 class BinOp(CodeExpression):
+
+    _fields = ["left", "op", "right"]
+
     def __init__(self, left, op, right):
         super(BinOp, self).__init__()
         self.left = left
@@ -343,6 +434,9 @@ class BinOp(CodeExpression):
 
 
 class UnaryOp(CodeExpression):
+
+    _fields = ["op", "operand"]
+
     def __init__(self, op, operand):
         self.op = op
         self.operand = operand
@@ -355,6 +449,9 @@ class UnaryOp(CodeExpression):
 
 
 class Lambda(CodeExpression):
+
+    _fields = ["args", "body"]
+
     def __init__(self, args, body):
         self.args = args
         self.body = body
@@ -366,6 +463,9 @@ class Lambda(CodeExpression):
 
 
 class IfExp(CodeExpression):
+
+    _fields = ["test", "body", "orelse"]
+
     def __init__(self, test, body, orelse):
         self.test = test
         self.body = body
@@ -378,7 +478,23 @@ class IfExp(CodeExpression):
         return "(({}) ? ({}) : ({}))".format(test, body, orelse)
 
 
+class Compare(CodeExpression):
+    def __init__(self, left, ops, comparators):
+        self.left = left
+        self.ops = ops
+        self.comparators = comparators
+
+    def build(self, ctx):
+        temp = [self.left.build(ctx)]
+        for op, comp in zip(self.ops, self.comparators):
+            temp += [op, comp.build(ctx)]
+        return " ".join(temp)
+
+
 class Call(CodeExpression):
+
+    _fields = ["func", "args", "keywords", "starargs", "kwargs"]
+
     def __init__(self, func, args=[], keywords=[], starargs=None, kwargs=None):
         self.func = func
         self.args = args
@@ -392,6 +508,9 @@ class Call(CodeExpression):
 
 
 class Num(CodeExpression):
+
+    _fields = ["n"]
+
     def __init__(self, n):
         super(Num, self).__init__()
         self.n = n
@@ -401,6 +520,9 @@ class Num(CodeExpression):
 
 
 class Str(CodeExpression):
+
+    _fields = ["s"]
+
     def __init__(self, s):
         self.s = s
 
@@ -409,6 +531,9 @@ class Str(CodeExpression):
 
 
 class NameConstant(CodeExpression):
+
+    _fields = ["value"]
+
     def __init__(self, value):
         self.value = value
 
@@ -420,6 +545,9 @@ class NameConstant(CodeExpression):
 
 
 class Attribute(CodeExpression):
+
+    _fields = ["value", "attr"]
+
     def __init__(self, value, attr):
         super(Attribute, self).__init__()
         self.value = value
@@ -429,7 +557,23 @@ class Attribute(CodeExpression):
         return "{}.{}".format(self.value.build(ctx), self.attr)
 
 
+class Subscript(CodeExpression):
+
+    _fields = ["value", "slice"]
+
+    def __init__(self, value, slice):
+        super(Subscript).__init__()
+        self.value = value
+        self.slice = slice
+
+    def build(self, ctx):
+        return "{}[{}]".format(self.value.build(ctx), self.slice.build(ctx))
+
+
 class Name(CodeExpression):
+
+    _fields = ["id"]
+
     def __init__(self, id):
         super(Name, self).__init__()
         self.id = id
@@ -443,7 +587,10 @@ class Name(CodeExpression):
         return self.id
 
 
-class Tuple(CodeExpression):
+class List(CodeExpression):
+
+    _fields = ["elts"]
+
     def __init__(self, elts):
         assert False
 
@@ -451,7 +598,35 @@ class Tuple(CodeExpression):
         assert False
 
 
+class Tuple(CodeExpression):
+
+    _fields = ["elts"]
+
+    def __init__(self, elts):
+        assert False
+
+    def build(self, ctx):
+        assert False
+
+
+# slice
+
+class Index(CodeExpression):
+
+    _fields = ["value"]
+
+    def __init__(self, value):
+        super(Index, self).__init__()
+        self.value = value
+
+    def build(self, ctx):
+        return self.value.build(ctx)
+
+
 class arguments(Base):
+
+    _fields = ["args", "vararg", "kwarg", "defaults"]
+
     def __init__(self, args, vararg, kwarg, defaults):
         self.args = args
         self.vararg = vararg
@@ -496,6 +671,9 @@ class arguments(Base):
 
 
 class arg(Base):
+
+    _fields = ["arg", "annotation"]
+
     def __init__(self, arg, annotation=None):
         self.arg = arg
         self.annotation = annotation
@@ -505,6 +683,9 @@ class arg(Base):
 
 
 class keyword(Base):
+
+    _fields = ["name", "value"]
+
     def __init__(self, name, value):
         self.name = name
         self.value = value
@@ -545,9 +726,9 @@ class CppTypeRegistry(types.TypeRegistry):
         return "int"
 
     @staticmethod
-    def detect(type):
+    def detect(type, rettype=False):
         if type is None or type not in type_registry:
-            return "void"
+            return "void" if rettype else "int"
         return type_registry.convert(type)
 
 

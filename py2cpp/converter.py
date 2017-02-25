@@ -37,6 +37,19 @@ UNARYOP_MAP = {
     ast.USub: "-",
 }
 
+CMPOP_MAP = {
+    ast.Eq: "==",
+    ast.NotEq: "!=",
+    ast.Lt: "<",
+    ast.LtE: "<=",
+    ast.Gt: ">",
+    ast.GtE: ">=",
+    #ast.Is: " is ",  # special case
+    #ast.IsNot: " is not ",  # special case
+    #ast.In: " in ",  # special case
+    #ast.NotIn: " not in ",  # special case
+}
+
 class Converter(ast.NodeVisitor):
     def __init__(self, transformers=transformer.Transformers, hooks=hook.Hooks):
         """
@@ -61,7 +74,7 @@ class Converter(ast.NodeVisitor):
         # apply transformers
         for transformer in self.transformers:
             node = transformer.visit(node)
-        return [self.visit(x) for x in node.body]
+        return cpp.Module(body=[self.visit(x) for x in node.body])
 
     #
     # Statements
@@ -188,6 +201,12 @@ class Converter(ast.NodeVisitor):
         orelse = self.visit(node.orelse)
         return cpp.IfExp(test=test, body=body, orelse=orelse)
 
+    def visit_Compare(self, node):
+        left = self.visit(node.left)
+        ops = [CMPOP_MAP[x.__class__] for x in node.ops]
+        comparators = [self.visit(x) for x in node.comparators]
+        return cpp.Compare(left=left, ops=ops, comparators=comparators)
+
     def visit_Call(self, node):
         func = self.visit(node.func)
         args = [self.visit(x) for x in node.args]
@@ -214,6 +233,11 @@ class Converter(ast.NodeVisitor):
         value = self.visit(node.value)
         return cpp.Attribute(value, node.attr)
 
+    def visit_Subscript(self, node):
+        value = self.visit(node.value)
+        slice = self.visit(node.slice)
+        return cpp.Subscript(value=value, slice=slice)
+
     def visit_Name(self, node):
         return cpp.Name(node.id)
         # TODO: node.ctx
@@ -221,6 +245,12 @@ class Converter(ast.NodeVisitor):
     def visit_Tuple(self, node):
         elts = [self.visit(x) for x in node.elts]
         return cpp.Tuple(elts=elts)
+
+    # slice
+
+    def visit_Index(self, node):
+        value = self.visit(node.value)
+        return cpp.Index(value=value)
 
     def visit_arguments(self, node):
         args = [self.visit(x) for x in node.args]

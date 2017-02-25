@@ -1,7 +1,4 @@
-def main():
-    """
-    :rtype: int
-    """
+def main() -> int:
     x = 0
     for i in range(100):
         x += i

@@ -1,7 +1,4 @@
-def main():
-    """
-    :rtype: int
-    """
+def main() -> int:
     print("Hello World!")
     return 0
 

@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import enum
+import sys
 
 import six
 
 from . import docstring
 from . import types
+
+
+PY35 = sys.version_info > (3, 5)  # FunctionDef returns
+PY36 = sys.version_info > (3, 6)  # arg annotation
 
 
 class Type(enum.Enum):
@@ -81,11 +86,12 @@ class CodeStatement(Base):
 
 
 class FunctionDef(CodeStatement):
-    def __init__(self, name, args, body, docstring):
+    def __init__(self, name, args, body, docstring, returns=None):
         super(FunctionDef, self).__init__(body)
         self.name = name
         self.args = args
         self.docstring = docstring
+        self.returns = returns
 
     def build(self, ctx):
         with BuildContext(ctx, self) as new_ctx:
@@ -104,7 +110,7 @@ class FunctionDef(CodeStatement):
             return "\n".join([
                 "{}{} {}({}) {{".format(
                     ctx.indent(),
-                    self.rtype(),
+                    self.rtype(ctx),
                     self.name,
                     self.args.build(new_ctx),
                 ),
@@ -112,14 +118,15 @@ class FunctionDef(CodeStatement):
                 ctx.indent() + "}",
             ])
 
-    def rtype(self):
+    def rtype(self, ctx):
+        if self.returns:
+            rtype = self.returns.build(ctx)
+            return CppTypeRegistry.detect(rtype)
         if self.docstring is None:
             return "void"
         rtype = docstring.get_rtype(self.docstring)
-        if rtype is None or rtype not in type_registry:
-            return "void"
         rtype = docstring.parse_type_of(rtype)
-        return type_registry.convert(rtype)
+        return CppTypeRegistry.detect(rtype)
 
 
 class ClassDef(CodeStatement):
@@ -461,25 +468,32 @@ class arguments(Base):
         types = dict(self.types)
         names = self.get_arg_names(ctx)
         values = self.get_arg_values(ctx)
-        for name in names:
+        for arg in self.args:
+            name = arg.build(ctx)
+            if arg.annotation:
+                types[name] = arg.annotation.build(ctx)
             if name not in types:
+                # not defined
                 types[name] = "int"
         start = len(names) - len(values)
         args = []
         for i, name in enumerate(names):
+            type = types[name]
+            type = CppTypeRegistry.detect(type)
             if i < start:
-                args.append("{} {}".format(types[name], name))
+                args.append("{} {}".format(type, name))
             else:
                 value = values[i - start]
-                args.append("{} {}={}".format(types[name], name, value))
+                args.append("{} {}={}".format(type, name, value))
         if ctx.is_class_method() and names[0] == "self":
             args = args[1:]
         return ", ".join(args)
 
 
 class arg(Base):
-    def __init__(self, arg):
+    def __init__(self, arg, annotation=None):
         self.arg = arg
+        self.annotation = annotation
 
     def build(self, ctx):
         return self.arg
@@ -516,6 +530,12 @@ class CppTypeRegistry(types.TypeRegistry):
             return self.type_map[type]
         # TODO
         return "int"
+
+    @staticmethod
+    def detect(type):
+        if type is None or type not in type_registry:
+            return "void"
+        return type_registry.convert(type)
 
 
 type_registry = CppTypeRegistry()

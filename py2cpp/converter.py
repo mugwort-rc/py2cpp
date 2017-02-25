@@ -74,9 +74,12 @@ class Converter(ast.NodeVisitor):
         docstring = ast.get_docstring(node)
         if docstring:
             body = body[1:]
+        if hasattr(node, "returns"):
+            returns = self.visit(node.returns)
+        else:
+            returns = None
         # TODO: decorator_list
-        # TODO: returns (python3)
-        return cpp.FunctionDef(name=name, args=args, body=body, docstring=docstring)
+        return cpp.FunctionDef(name=name, args=args, body=body, docstring=docstring, returns=returns)
 
     def visit_ClassDef(self, node):
         name = node.name
@@ -232,10 +235,13 @@ class Converter(ast.NodeVisitor):
         """for python3 ast
         """
         arg = node.arg
-        # TODO: node.annotation
+        if hasattr(node, "annotation"):
+            annotation = self.visit(node.annotation)
+        else:
+            annotation = None
         # TODO: node.lineno
         # TODO: node.col_offset
-        return cpp.arg(arg=arg)
+        return cpp.arg(arg=arg, annotation=annotation)
 
     def visit_keyword(self, node):
         if six.PY3:

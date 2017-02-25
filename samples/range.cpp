@@ -5,6 +5,6 @@ int main() {
     for (auto i : py2cpp::range(100)) {
         x += i;
     }
-    print(x);
+    std::cout << x << std::endl;
     return 0;
 }

@@ -21,6 +21,10 @@ class Hook(object):
         raise NotImplementedError
 
 
+class ExprHook(Hook):
+    pass
+
+
 class CallHook(Hook):
     pass
 
@@ -88,12 +92,28 @@ class RangeHook(CallHook):
         if node.__class__ != ast.Call:
             return False
         func = node.func
-        if node.func.__class__ != ast.Name:
+        if func.__class__ != ast.Name:
             return False
-        return node.func.id == "range"
+        return func.id == "range"
 
     def apply(self, node, ret):
         ret.func = cpp.CppScope(value=cpp.Name(id="py2cpp"), attr="range")
+        return ret
+
+
+class PrintHook(ExprHook):
+    def match(self, node):
+        if node.__class__ != ast.Expr:
+            return False
+        value = node.value
+        if value.__class__ != ast.Call:
+            return False
+        if value.func.__class__ != ast.Name:
+            return False
+        return value.func.id == "print"
+
+    def apply(self, node, ret):
+        ret = cpp.StdCout(value=ret.value)
         return ret
 
 
@@ -103,4 +123,5 @@ Hooks = [
     NoneHook,
     ArgTypeHook,
     RangeHook,
+    PrintHook,
 ]

@@ -5,6 +5,6 @@ double add(double x, double y) {
 }
 
 int main() {
-    print("2.0 + 3.0 =", add(2.0, 3.0));
+    std::cout << "2.0 + 3.0 =" << add(2.0, 3.0) << std::endl;
     return 0;
 }

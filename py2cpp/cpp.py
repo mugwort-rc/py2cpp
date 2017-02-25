@@ -278,8 +278,13 @@ class Raise(CodeStatement):
 
 
 class Expr(CodeStatement):
+    def __init__(self, value):
+        super(Expr, self).__init__(value)
+        self.value = value
+        del self.stmt
+
     def build(self, ctx):
-        return ctx.indent() + "{};".format(self.stmt.build(ctx))
+        return ctx.indent() + "{};".format(self.value.build(ctx))
 
 
 class Pass(CodeStatement):
@@ -518,6 +523,14 @@ class keyword(Base):
 class CppScope(Attribute):
     def build(self, ctx):
         return "{}::{}".format(self.value.build(ctx), self.attr)
+
+
+class StdCout(Expr):
+    def build(self, ctx):
+        temp = ["std::cout"]
+        temp += [x.build(ctx) for x in self.value.args]
+        temp += ["std::endl"]
+        return ctx.indent() + " << ".join(temp) + ";"
 
 
 #

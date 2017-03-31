@@ -28,8 +28,10 @@ def main(argv):
     cpp_node = conv.visit(node)
 
     ctx = BuildContext.create()
+    print("// generate by py2cpp")
+    print("// original source code:", args.input.name)
     print('#include "py2cpp/py2cpp.hpp"\n')
-    print("\n\n".join([x.build(ctx) for x in cpp_node]))
+    print(cpp_node.build(ctx))
 
     return 0
 

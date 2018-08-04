@@ -76,3 +76,121 @@ int main() {
     return 0;
 }
 ```
+
+
+AST Node
+--------
+
+<https://docs.python.jp/3/library/ast.html>
+
+### Supported
+
+#### Modules
+
+* Module
+
+#### Statements
+
+* FunctionDef
+* ClassDef
+* Return
+* Assign
+* AugAssign
+* For
+* While
+* If
+* Raise
+* Expr
+* Pass
+* Break
+* Continue
+
+### Expressions
+
+* BoolOp
+* BinOp
+* UnaryOp
+* Lambda
+* IfExp
+* Compare
+* Call
+* Num
+* Str
+* NameConstant
+* Attribute
+* Subscript
+* Name
+* Tuple
+* Index
+* arguments
+* arg
+* keyword
+
+### Unsupported yet
+
+```
+$ cat unsupported.py
+try:
+    raise Exception()
+except:
+    pass
+
+$ python -m py2cpp unsupported.py
+// generate by py2cpp
+// original source code: unsupported.py
+#include "py2cpp/py2cpp.hpp"
+
+// UNSUPPORTED AST NODE: Try
+```
+
+#### Modules
+
+* Interactive
+* Expression
+* Suite
+
+#### Statements
+
+* AsyncFunctionDef
+* Delete
+* AnnAssign
+* AsyncFor
+* With
+* AsyncWith
+* Try
+* Assert
+* Import
+* ImportFrom
+* Global
+* Nonlocal
+* attributes
+
+#### Expressions
+
+* Dict
+* Set
+* ListComp
+* SetComp
+* DictComp
+* GeneratorExp
+* Await
+* Yield
+* YieldFrom
+* FormattedValue
+* JoinedStr
+* Bytes
+* Ellipsis
+* Constant
+* Starred
+* List
+* attributes
+* expr_context
+* slice
+* boolop
+* operator
+* unaryop
+* cmpop
+* comprehension
+* excepthandler
+* alias
+* withitem

@@ -49,6 +49,7 @@ class Type(enum.Enum):
     Expr = 2
     Stmt = 4
     arguments = 2048
+    Comment = 9999
 
 
 INDENT = " " * 4
@@ -112,6 +113,15 @@ class Base(object):
         raise NotImplementedError
 
 AST = Base
+
+
+class UnsupportedNode(Base):
+    def __init__(self, node):
+        super(UnsupportedNode, self).__init__(Type.Comment)
+        self.node = node
+
+    def build(self, ctx):
+        return "// UNSUPPORTED AST NODE: {}".format(self.node.__class__.__name__)
 
 
 class Module(Base):

@@ -61,6 +61,8 @@ class Converter(ast.NodeVisitor):
 
     def visit(self, node):
         ret = super(Converter, self).visit(node)
+        if ret is None:
+            return cpp.UnsupportedNode(node)
         for hook in self.hooks:
             if hook.match(node):
                 return hook.apply(node, ret)

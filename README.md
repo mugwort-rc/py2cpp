@@ -3,6 +3,13 @@ py2cpp
 
 A Python to C++ compiler.
 
+Install
+-------
+
+```
+pip install -e git+https://github.com/mugwort-rc/py2cpp.git#egg=py2cpp
+```
+
 Usage
 -----
 

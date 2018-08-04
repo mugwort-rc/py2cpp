@@ -1,3 +1,5 @@
-enum34
-six
-pytest
+enum34==1.1.6
+pkg-resources==0.0.0
+py==1.4.32
+pytest==3.0.6
+six==1.10.0

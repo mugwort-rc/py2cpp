@@ -19,5 +19,6 @@ setup(name="py2cpp",
     author="mugwort_rc",
     author_email="mugwort [dot] rc [at] gmail [dot] com",
     zip_safe=False,
+    install_requires=["six"],
     packages=find_packages(),
 )
